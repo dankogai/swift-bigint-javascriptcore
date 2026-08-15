@@ -24,7 +24,44 @@ extension JSBigInt {
         /// One JS function per primitive operation, compiled once.
         static let fns: [String: JSValue] = {
             let source = """
-            ({
+            (() => {
+                // plain modular exponentiation on non-negative operands, m > 0
+                const mpow = (b, e, m) => {
+                    let r = 1n % m, x = b % m, ee = e;
+                    while (ee > 0n) {
+                        if (ee & 1n) r = (r * x) % m;
+                        x = (x * x) % m;
+                        ee >>= 1n;
+                    }
+                    return r;
+                };
+                // one Miller-Rabin round: true when `a` fails to witness `n` composite
+                const mrtest = (n, a) => {
+                    if (n < 2n) return false;
+                    if ((n & 1n) === 0n) return n === 2n;
+                    let base = a % n;
+                    if (base < 0n) base += n;
+                    if (base === 0n) return true;
+                    let d = n - 1n, s = 0n;
+                    while ((d & 1n) === 0n) { d >>= 1n; s++; }
+                    let x = mpow(base, d, n);
+                    if (x === 1n || x === n - 1n) return true;
+                    for (let i = 1n; i < s; i++) {
+                        x = (x * x) % n;
+                        if (x === n - 1n) return true;
+                    }
+                    return false;
+                };
+                // A014233: below entry i, passing prime bases 0...i proves primality
+                const MR_BASES = [2n, 3n, 5n, 7n, 11n, 13n, 17n, 19n, 23n, 29n, 31n, 37n, 41n];
+                const MR_TABLE = [
+                    2047n, 1373653n, 25326001n, 3215031751n, 2152302898747n,
+                    3474749660383n, 341550071728321n, 341550071728321n,
+                    3825123056546413051n, 3825123056546413051n, 3825123056546413051n,
+                    318665857834031151167461n, 3317044064679887385961981n,
+                ];
+                const EXTRA_BASES = [43n, 47n, 53n, 59n, 61n, 67n, 71n, 73n, 79n, 83n, 89n, 97n];
+                return {
                 parse: (s, r) => {
                     try {
                         s = s.trim();
@@ -120,14 +157,25 @@ extension JSBigInt {
                         if (base < 0n) base += am;
                         exp = -exp;
                     }
-                    let result = 1n % am;
-                    while (exp > 0n) {
-                        if (exp & 1n) result = (result * base) % am;
-                        base = (base * base) % am;
-                        exp >>= 1n;
-                    }
+                    let result = mpow(base, exp, am);
                     if (m < 0n && result !== 0n) result -= am;
                     return result;
+                },
+                mrtest: mrtest,
+                isprime: (n) => {
+                    // 0: composite, 1: prime (proven), 2: probably prime (unproven)
+                    if (n < 2n) return 0;
+                    for (const p of MR_BASES.concat(EXTRA_BASES)) {
+                        if (n % p === 0n) return n === p ? 1 : 0;
+                    }
+                    for (let i = 0; i < MR_BASES.length; i++) {
+                        if (!mrtest(n, MR_BASES[i])) return 0;
+                        if (n < MR_TABLE[i]) return 1;
+                    }
+                    for (const a of EXTRA_BASES) {
+                        if (!mrtest(n, a)) return 0;
+                    }
+                    return 2;
                 },
                 gcd: (a, b) => {
                     let x = a < 0n ? -a : a;
@@ -150,14 +198,15 @@ extension JSBigInt {
                 },
                 eq:  (a, b) => a === b,
                 lt:  (a, b) => a < b,
-            })
+                };
+            })()
             """
             let ops = context.evaluateScript(source)!
             var fns = [String: JSValue]()
             for name in ["parse", "str", "fromWords", "words", "bitWidth", "tzbc",
                          "add", "sub", "mul", "div", "mod", "neg", "abs",
                          "and", "or", "xor", "not", "shl", "shr", "pow", "modpow",
-                         "gcd", "isqrt", "eq", "lt"] {
+                         "gcd", "isqrt", "mrtest", "isprime", "eq", "lt"] {
                 fns[name] = ops.objectForKeyedSubscript(name)!
             }
             return fns
@@ -407,6 +456,49 @@ extension JSBigInt {
             preconditionFailure("square root of a negative JSBigInt")
         }
         return Self(object: result)
+    }
+}
+
+// MARK: - Primality
+
+extension JSBigInt {
+    /// A single Miller-Rabin round: `true` when `base` fails to witness `self`
+    /// composite.  A single base proves nothing on its own (2047 = 23 × 89
+    /// passes base 2); use `isPrime` or `isProbablePrime` for an actual verdict.
+    public func millerRabinTest(base: Self) -> Bool {
+        Self.jsop("mrtest", [object, base.object]).toBool()
+    }
+
+    /// `true` if `self` passes Miller-Rabin with the first 25 primes as bases.
+    ///
+    /// Below 3317044064679887385961981 — the last entry of [A014233] — the
+    /// first 13 of those bases constitute a *proof*, so no wrong answer is
+    /// possible there.  Above it, no composite is known to pass all 25, but
+    /// constructions exist against any fixed base set, which is why `isPrime`
+    /// withholds its answer past the bound and this one is spelled "probable".
+    ///
+    /// [A014233]: https://oeis.org/A014233
+    public var isProbablePrime: Bool {
+        Int32(Self.jsop("isprime", [object]).toInt32()) != 0
+    }
+
+    /// Whether `self` is prime, or `nil` when Miller-Rabin cannot settle it.
+    ///
+    /// Follows swift-bignum's contract: `false` is always a proof (a witness
+    /// to compositeness is a proof), `true` is a proof (deterministic below
+    /// [A014233]'s last entry, 3317044064679887385961981), and past that bound
+    /// a passing value is only *probably* prime, so this returns `nil` rather
+    /// than laundering the probability into a fact — `isProbablePrime` is that
+    /// opinion.  `nil` is not "no": treat it deliberately, with `== true`,
+    /// rather than by reaching for `??`.
+    ///
+    /// [A014233]: https://oeis.org/A014233
+    public var isPrime: Bool? {
+        switch Self.jsop("isprime", [object]).toInt32() {
+        case 0:  return false
+        case 1:  return true
+        default: return nil
+        }
     }
 }
 

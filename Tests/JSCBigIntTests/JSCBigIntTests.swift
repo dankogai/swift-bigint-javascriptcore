@@ -240,6 +240,41 @@ import Foundation
         #expect(r * r <= x && x < (r + 1) * (r + 1))
     }
 
+    @Test func primality() {
+        // small values: proven either way
+        #expect(JSBigInt(-7).isPrime == false)
+        #expect(JSBigInt(0).isPrime == false)
+        #expect(JSBigInt(1).isPrime == false)
+        #expect(JSBigInt(2).isPrime == true)
+        #expect(JSBigInt(3).isPrime == true)
+        #expect(JSBigInt(4).isPrime == false)
+        #expect(JSBigInt(97).isPrime == true)
+        #expect(JSBigInt(91).isPrime == false)       // 7 × 13
+        #expect(JSBigInt(1000003).isPrime == true)
+        #expect(JSBigInt(1000001).isPrime == false)  // 101 × 9901
+        // Carmichael numbers fool Fermat, not Miller-Rabin
+        #expect(JSBigInt(561).isPrime == false)
+        #expect(JSBigInt(1105).isPrime == false)
+        #expect(JSBigInt(1729).isPrime == false)
+        // 2047 = 23 × 89 is a strong pseudoprime to base 2: one round lies,
+        // the verdict does not
+        #expect(JSBigInt(2047).millerRabinTest(base: 2))
+        #expect(JSBigInt(2047).isPrime == false)
+        // beyond 2^64 but inside A014233's deterministic range: still a proof
+        #expect(JSBigInt("100000000000000000039")!.isPrime == true)
+        #expect(JSBigInt("100000000000000000037")!.isPrime == false)
+        // beyond the deterministic range: Miller-Rabin has an opinion but no proof
+        let m89 = (JSBigInt(1) << 89) - 1   // Mersenne prime 2^89 - 1
+        #expect(m89.isProbablePrime)
+        #expect(m89.isPrime == nil)
+        let m127 = (JSBigInt(1) << 127) - 1 // Mersenne prime 2^127 - 1
+        #expect(m127.isProbablePrime)
+        #expect(m127.isPrime == nil)
+        // a witness is a proof at any size
+        #expect((m89 * m127).isPrime == false)
+        #expect((m127 * m127).isPrime == false)
+    }
+
     @Test func fibonacci() {
         func fib(_ n: Int) -> JSBigInt {
             var (a, b): (JSBigInt, JSBigInt) = (0, 1)

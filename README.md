@@ -55,6 +55,13 @@ and `import JSCBigInt`.
 - `greatestCommonDivisor(with:)` and `squareRoot()` (integer square
   root, floor), named and behaving like their swift-bignum and
   attaswift/BigInt counterparts.
+- Miller-Rabin primality: `isPrime` is tri-state à la swift-bignum —
+  `false` and `true` are proofs (deterministic below [A014233]'s last
+  entry, ≈3.3 × 10²⁴), `nil` means "probably prime, unproven" with
+  `isProbablePrime` holding that opinion; `millerRabinTest(base:)`
+  exposes a single round.
+
+[A014233]: https://oeis.org/A014233
 - `Codable` (encoded as a decimal string).
 - Thread-safe: values are immutable and JavaScriptCore serializes access
   through the `JSVirtualMachine` lock.
