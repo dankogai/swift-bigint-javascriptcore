@@ -11,12 +11,16 @@ let package = Package(
         .package(url: "https://github.com/dankogai/swift-bignum.git", branch: "main"),
     ],
     targets: [
-        .executableTarget(
-            name: "SwiftBigNumExample",
+        // the conformance glue: JSBigInt as a RationalElement and
+        // BigIntegerType, plus the JSRat/JSFloat typealiases
+        .target(
+            name: "JSCBigNum",
             dependencies: [
                 .product(name: "JSCBigInt", package: "swift-bigint-javascriptcore"),
                 .product(name: "BigNum", package: "swift-bignum"),
             ]
         ),
+        .executableTarget(name: "SwiftBigNumExample", dependencies: ["JSCBigNum"]),
+        .testTarget(name: "JSCBigNumTests", dependencies: ["JSCBigNum"]),
     ]
 )

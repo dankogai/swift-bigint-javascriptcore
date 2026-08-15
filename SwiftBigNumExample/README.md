@@ -4,8 +4,17 @@
 `BigRat` and `BigFloat` keep working, side by side.
 
 ```sh
-swift run
+swift run    # the demo
+swift test   # the test suite
 ```
+
+The conformance glue lives in its own `JSCBigNum` library target, which
+the demo executable and the test suite share.  The tests pin down what
+the demo prints: `Rational<JSBigInt>` reduction through JSBigInt's own
+gcd, `BigFloatOf<JSBigInt>` agreeing with `BigFloat` digit-for-digit on
+π, √2, e and log 10, the per-specialization `precision` knob, the zero
+regression from swift-bignum#31's review, and the Codable round trip of
+a JSBigInt-mantissa float.
 
 Three tricks make it work:
 

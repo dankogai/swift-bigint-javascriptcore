@@ -25,3 +25,5 @@ jobs:
         run: swift test -c release -Xswiftc -enable-testing -v
       - name: Run SwiftBigNumExample
         run: swift run --package-path SwiftBigNumExample
+      - name: Test SwiftBigNumExample
+        run: swift test --package-path SwiftBigNumExample

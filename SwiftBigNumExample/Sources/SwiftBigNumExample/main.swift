@@ -8,29 +8,9 @@
 //
 import BigNum
 import JSCBigInt
+import JSCBigNum   // the conformance glue: JSRat, JSFloat, BNBigInt
 
 typealias BigInt = JSBigInt
-
-// BigNum's own BigInt is still reachable — not as `BigNum.BigInt` (the
-// `BigNum` *protocol* shadows the module name in qualified lookup), but
-// through an associated type that never stopped pointing at it:
-typealias BNBigInt = BigFloat.Significand
-
-// `Rational` is generic over `RationalElement`, so JSBigInt can be its
-// element: this is BigRat's own machinery running on JavaScriptCore digits.
-// JSBigInt's own greatestCommonDivisor(with:) and squareRoot() are the
-// witnesses, so reduction runs in JavaScriptCore too.
-extension JSBigInt: @retroactive RationalElement {}
-typealias JSRat = Rational<JSBigInt>
-
-// And since swift-bignum's BigFloat went generic (BigFloatOf<IntType>, see
-// https://github.com/dankogai/swift-bignum/pull/31), one more conformance —
-// BigIntegerType, which JSBigInt satisfies save for spelling out `isZero` —
-// puts a JavaScriptCore mantissa under the float as well.
-extension JSBigInt: @retroactive BigIntegerType {
-    public var isZero: Bool { self == 0 }
-}
-typealias JSFloat = BigFloatOf<JSBigInt>
 
 func banner(_ title: String) {
     print("\n== \(title) ==")
