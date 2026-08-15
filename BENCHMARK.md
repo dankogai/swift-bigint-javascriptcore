@@ -41,14 +41,15 @@ Bold marks the fastest per row; parenthesized ratios are relative to it.
 
 | Benchmark | JSCBigInt | attaswift/BigInt | swift-bignum |
 |:--|--:|--:|--:|
-| sum 1...100_000 (100k small ops) | 340.02 ms (21.1×) | **16.10 ms** | 26.01 ms (1.6×) |
-| fib(10_000) (2,090 digits) | 11.42 ms (4.2×) | 4.35 ms (1.6×) | **2.74 ms** |
-| factorial(1_000) (2,568 digits) | 2.84 ms (8.1×) | 0.39 ms (1.1×) | **0.35 ms** |
-| 2.power(100_000) (30,103 digits) | **0.01 ms** | 0.03 ms (3.5×) | 0.19 ms (22.5×) |
-| 10k-digit × 10k-digit, 100 times | **24.40 ms** | 185.02 ms (7.6×) | 63.13 ms (2.6×) |
-| 20k-digit ÷ 10k-digit, 100 times | **67.04 ms** | 330.91 ms (4.9×) | 183.20 ms (2.7×) |
-| toString(2^100_000), decimal | 19.82 ms (1.0×) | 26.46 ms (1.4×) | **19.43 ms** |
-| parse 10,000 decimal digits, 100 times | 61.15 ms (1.9×) | 93.61 ms (2.9×) | **32.15 ms** |
+| sum 1...100_000 (100k small ops) | 330.35 ms (20.8×) | **15.89 ms** | 25.68 ms (1.6×) |
+| fib(10_000) (2,090 digits) | 12.14 ms (4.4×) | 4.33 ms (1.6×) | **2.73 ms** |
+| factorial(1_000) (2,568 digits) | 2.87 ms (8.2×) | 0.40 ms (1.1×) | **0.35 ms** |
+| 2.power(100_000) (30,103 digits) | **0.01 ms** | 0.03 ms (3.2×) | 0.19 ms (20.3×) |
+| 10k-digit × 10k-digit, 100 times | **24.24 ms** | 184.13 ms (7.6×) | 62.72 ms (2.6×) |
+| 20k-digit ÷ 10k-digit, 100 times | **66.53 ms** | 328.67 ms (4.9×) | 182.18 ms (2.7×) |
+| 2060-bit modPow (power(_:mod:)) | **16.93 ms** | 77.19 ms (4.6×) | 57.50 ms (3.4×) |
+| toString(2^100_000), decimal | 19.83 ms (1.0×) | 26.07 ms (1.3×) | **19.38 ms** |
+| parse 10,000 decimal digits, 100 times | 60.52 ms (1.9×) | 92.70 ms (2.9×) | **32.37 ms** |
 
 ## Analysis
 
@@ -72,6 +73,11 @@ operation grows, so the balance tips:
   **2.6× / 2.7×**. WebKit's `JSBigInt` core uses asymptotically better
   algorithms and hand-tuned C++ limb arithmetic that pure Swift has to
   chase.
+- **RSA-sized modPow** is JSCBigInt's best case among the practical
+  workloads: `power(_:mod:)` runs its entire square-and-multiply loop
+  inside JavaScriptCore in a **single bridge crossing** — ~2060 squarings
+  of 2060-bit numbers with zero per-operation bridge tax — beating
+  swift-bignum 3.4× and attaswift 4.6×.
 - **Radix-10 conversion** is a close race between JSCBigInt and
   swift-bignum on printing, while swift-bignum's parser is the clear
   winner — reminding us that algorithm choice matters more than

@@ -50,6 +50,18 @@ let jPow = JSBigInt(2).power(100_000) // 30,103 digits
 let aPow = AttaBigInt(2).power(100_000)
 let dPow = DanBigInt(2).power(100_000)
 
+// RSA-sized modexp operands: ~2060 bits each
+let digits620 = String(repeating: "9876543210", count: 62)
+let jMod = JSBigInt(digits620)! + 1 // odd
+let jBase = jMod - 12346
+let jExp = jMod >> 1
+let aMod = AttaBigInt(digits620)! + 1
+let aBase = aMod - 12346
+let aExp = aMod >> 1
+let dMod = DanBigInt(digits620)! + 1
+let dBase = dMod - 12346
+let dExp = dMod >> 1
+
 // MARK: - Cases
 
 let cases: [Case] = [
@@ -77,6 +89,10 @@ let cases: [Case] = [
         jsc:  { for _ in 0..<100 { blackhole(jBig / jB) } },
         atta: { for _ in 0..<100 { blackhole(aBig / aB) } },
         dan:  { for _ in 0..<100 { blackhole(dBig / dB) } }),
+    Case(name: "2060-bit modPow (power(_:mod:))", runs: 3,
+        jsc:  { blackhole(jBase.power(jExp, mod: jMod)) },
+        atta: { blackhole(aBase.power(aExp, modulus: aMod)) },
+        dan:  { blackhole(dBase.power(dExp, mod: dMod)) }),
     Case(name: "toString(2^100_000), decimal", runs: 3,
         jsc:  { blackhole(jPow.description.count) },
         atta: { blackhole(aPow.description.count) },
@@ -94,6 +110,11 @@ precondition(jBig.description == aBig.description, "libraries disagree!")
 precondition(jBig.description == dBig.description, "libraries disagree!")
 precondition(jPow.description == aPow.description, "libraries disagree!")
 precondition(jPow.description == dPow.description, "libraries disagree!")
+let (jM, aM, dM) = (JSBigInt(123).power(jExp, mod: jMod),
+                    AttaBigInt(123).power(aExp, modulus: aMod),
+                    DanBigInt(123).power(dExp, mod: dMod))
+precondition(jM.description == aM.description, "libraries disagree on modPow!")
+precondition(jM.description == dM.description, "libraries disagree on modPow!")
 
 print("| Benchmark | JSCBigInt | attaswift/BigInt | swift-bignum |")
 print("|:--|--:|--:|--:|")

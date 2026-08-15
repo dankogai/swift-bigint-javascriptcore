@@ -180,6 +180,32 @@ import Foundation
         #expect(sum == 55)
     }
 
+    @Test func modularExponentiation() {
+        #expect(JSBigInt(2).power(10, mod: 1000) == 24)
+        #expect(JSBigInt(2).power(0, mod: 1000) == 1)
+        #expect(JSBigInt(5).power(0, mod: 1) == 0)   // everything is 0 mod 1
+        // least non-negative residue, unlike truncated %
+        #expect(JSBigInt(-2).power(3, mod: 5) == 2)
+        #expect(JSBigInt(-2).power(3) % 5 == -3)
+        // negative modulus: least residue in (m, 0]
+        #expect(JSBigInt(2).power(10, mod: -1000) == -976)
+        // agreement with plain power where both are computable
+        #expect(JSBigInt(7).power(20, mod: 1000003) == JSBigInt(7).power(20) % 1000003)
+        // negative exponent is the modular inverse
+        #expect(JSBigInt(3).power(-1, mod: 7) == 5)  // 3 * 5 == 15 ≡ 1 (mod 7)
+        #expect(JSBigInt(3).power(-2, mod: 7) == 4)  // 5 * 5 == 25 ≡ 4 (mod 7)
+        // Fermat's little theorem: a^(p-1) ≡ 1 (mod p) for prime p ∤ a
+        let p: JSBigInt = 1000000007
+        #expect(JSBigInt(12345).power(p - 1, mod: p) == 1)
+        // RSA textbook example: n = 61 * 53, e = 17, d = 2753
+        let n: JSBigInt = 3233
+        let c = JSBigInt(65).power(17, mod: n)
+        #expect(c == 2790)
+        #expect(c.power(2753, mod: n) == 65)
+        // huge exponent that plain power(_:) could never materialize
+        #expect(JSBigInt(2).power(JSBigInt(1) << 512, mod: 1_000_000_007) == 656254629)
+    }
+
     @Test func fibonacci() {
         func fib(_ n: Int) -> JSBigInt {
             var (a, b): (JSBigInt, JSBigInt) = (0, 1)

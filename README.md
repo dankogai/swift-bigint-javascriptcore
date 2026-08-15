@@ -49,7 +49,9 @@ and `import JSCBigInt`.
 - String conversion to and from any radix in `2...36`.
 - Exact conversions to and from `BinaryInteger` and `BinaryFloatingPoint`
   types, including two's-complement `words` for stdlib interop.
-- `power(_:)` via the JS `**` operator.
+- `power(_:)` via the JS `**` operator, and modular exponentiation
+  `power(_:mod:)` with swift-bignum-compatible semantics (least
+  non-negative residue; a negative exponent takes the modular inverse).
 - `Codable` (encoded as a decimal string).
 - Thread-safe: values are immutable and JavaScriptCore serializes access
   through the `JSVirtualMachine` lock.

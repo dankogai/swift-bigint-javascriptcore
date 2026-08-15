@@ -101,6 +101,34 @@ extension JSBigInt {
                 shl: (a, b) => a << b,
                 shr: (a, b) => a >> b,
                 pow: (a, b) => a ** b,
+                modpow: (b, e, m) => {
+                    const am = m < 0n ? -m : m;
+                    let base = b % am;
+                    if (base < 0n) base += am;
+                    let exp = e;
+                    if (exp < 0n) {
+                        // extended Euclid: base := base^-1 (mod am), or null if not coprime
+                        let [r0, r1] = [base, am];
+                        let [s0, s1] = [1n, 0n];
+                        while (r1 !== 0n) {
+                            const q = r0 / r1;
+                            [r0, r1] = [r1, r0 - q * r1];
+                            [s0, s1] = [s1, s0 - q * s1];
+                        }
+                        if (r0 !== 1n) return null;
+                        base = s0 % am;
+                        if (base < 0n) base += am;
+                        exp = -exp;
+                    }
+                    let result = 1n % am;
+                    while (exp > 0n) {
+                        if (exp & 1n) result = (result * base) % am;
+                        base = (base * base) % am;
+                        exp >>= 1n;
+                    }
+                    if (m < 0n && result !== 0n) result -= am;
+                    return result;
+                },
                 eq:  (a, b) => a === b,
                 lt:  (a, b) => a < b,
             })
@@ -109,7 +137,7 @@ extension JSBigInt {
             var fns = [String: JSValue]()
             for name in ["parse", "str", "fromWords", "words", "bitWidth", "tzbc",
                          "add", "sub", "mul", "div", "mod", "neg", "abs",
-                         "and", "or", "xor", "not", "shl", "shr", "pow", "eq", "lt"] {
+                         "and", "or", "xor", "not", "shl", "shr", "pow", "modpow", "eq", "lt"] {
                 fns[name] = ops.objectForKeyedSubscript(name)!
             }
             return fns
@@ -318,6 +346,27 @@ extension JSBigInt {
     public func power(_ exponent: some BinaryInteger) -> Self {
         precondition(exponent >= 0, "exponent must be non-negative")
         return Self.binop("pow", self, Self(exponent))
+    }
+
+    /// Modular exponentiation: `self` raised to `exponent`, modulo `modulus`,
+    /// by square-and-multiply — only the modulus bounds the intermediates, so
+    /// huge exponents stay cheap where `power(_:)` could not run at all.
+    ///
+    /// Semantics match swift-bignum's `power(_:mod:)`:
+    /// * The result is the **least residue of matching sign**: in `0..<|m|` for
+    ///   a positive modulus (so `JSBigInt(-2).power(3, mod: 5)` is `2`, where
+    ///   `JSBigInt(-2).power(3) % 5` is `-3`), and in `(m, 0]` for a negative one.
+    /// * A **negative `exponent`** raises the modular inverse of `self`, so
+    ///   `x.power(-1, mod: m)` *is* that inverse.  It traps when `self` and
+    ///   `modulus` are not coprime, there being no inverse to return.
+    /// * A **zero `modulus`** traps.
+    public func power(_ exponent: some BinaryInteger, mod modulus: Self) -> Self {
+        precondition(modulus != 0, "power(_:mod:) with a modulus of zero")
+        let result = Self.jsop("modpow", [object, Self(exponent).object, modulus.object])
+        guard result.isNull == false else {
+            preconditionFailure("\(self) has no inverse modulo \(modulus)")
+        }
+        return Self(object: result)
     }
 }
 
