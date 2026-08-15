@@ -263,16 +263,72 @@ import Foundation
         // beyond 2^64 but inside A014233's deterministic range: still a proof
         #expect(JSBigInt("100000000000000000039")!.isPrime == true)
         #expect(JSBigInt("100000000000000000037")!.isPrime == false)
-        // beyond the deterministic range: Miller-Rabin has an opinion but no proof
+        // Mersenne numbers beyond the deterministic MR range: Lucas-Lehmer
+        // settles them outright, so isPrime answers where it once said nil
         let m89 = (JSBigInt(1) << 89) - 1   // Mersenne prime 2^89 - 1
         #expect(m89.isProbablePrime)
-        #expect(m89.isPrime == nil)
+        #expect(m89.isPrime == true)
         let m127 = (JSBigInt(1) << 127) - 1 // Mersenne prime 2^127 - 1
         #expect(m127.isProbablePrime)
-        #expect(m127.isPrime == nil)
+        #expect(m127.isPrime == true)
         // a witness is a proof at any size
         #expect((m89 * m127).isPrime == false)
         #expect((m127 * m127).isPrime == false)
+        // past every deterministic bound and not Mersenne: still nil
+        let q = m89.nextPrime
+        #expect(q.isPrime == nil && q.isProbablePrime)
+        #expect(q.isSurelyPrime == (true, surely: false))
+        #expect(JSBigInt(2047).isSurelyPrime == (false, surely: true))
+        #expect(m127.isSurelyPrime == (true, surely: true))
+    }
+
+    @Test func jacobiSymbol() {
+        // (a/7) for a in 1...6, verified via Euler's criterion
+        #expect((1...6).map { JSBigInt(7).jacobiSymbol($0) } == [1, 1, -1, 1, -1, -1])
+        // composite modulus: multiplicative over the factors
+        #expect(JSBigInt(15).jacobiSymbol(2) == 1)   // (2/3)(2/5) = (-1)(-1)
+        #expect(JSBigInt(15).jacobiSymbol(7) == -1)  // (7/3)(7/5) = (1)(-1)
+        #expect(JSBigInt(9).jacobiSymbol(5) == 1)    // (5/3)^2
+        #expect(JSBigInt(3).jacobiSymbol(-1) == -1)
+        #expect(JSBigInt(9907).jacobiSymbol(1001) == -1)
+        // 0 unless self is odd and positive
+        #expect(JSBigInt(15).jacobiSymbol(3) == 0)   // shared factor
+        #expect(JSBigInt(8).jacobiSymbol(3) == 0)
+        #expect(JSBigInt(-7).jacobiSymbol(3) == 0)
+        #expect(JSBigInt(0).jacobiSymbol(3) == 0)
+    }
+
+    @Test func lucasProbablePrime() {
+        #expect(JSBigInt(2).isLucasProbablePrime)
+        #expect(JSBigInt(1000003).isLucasProbablePrime)
+        #expect(((JSBigInt(1) << 127) - 1).isLucasProbablePrime)
+        #expect(!JSBigInt(1).isLucasProbablePrime)
+        #expect(!JSBigInt(4).isLucasProbablePrime)
+        #expect(!JSBigInt(561).isLucasProbablePrime)   // Carmichael
+        #expect(!JSBigInt(2047).isLucasProbablePrime)  // base-2 strong pseudoprime
+        // perfect squares are screened out before the D search
+        #expect(!JSBigInt(25).isLucasProbablePrime)
+        let big = JSBigInt(10).power(20) + 39          // prime
+        #expect(big.isLucasProbablePrime)
+        #expect(!(big * big).isLucasProbablePrime)
+    }
+
+    @Test func mersennePrime() {
+        // 2^p - 1 for prime p: Lucas-Lehmer verdicts
+        #expect(JSBigInt(3).isMersennePrime == true)          // M2
+        #expect(JSBigInt(7).isMersennePrime == true)          // M3
+        #expect(JSBigInt(8191).isMersennePrime == true)       // M13
+        #expect(JSBigInt(2047).isMersennePrime == false)      // M11 = 23 × 89
+        #expect(((JSBigInt(1) << 67) - 1).isMersennePrime == false)  // M67, Cole's composite
+        #expect(((JSBigInt(1) << 89) - 1).isMersennePrime == true)   // M89
+        #expect(((JSBigInt(1) << 127) - 1).isMersennePrime == true)  // M127
+        // composite exponent: composite without running the recurrence
+        #expect(((JSBigInt(1) << 12) - 1).isMersennePrime == false)
+        // not 2^p - 1 at all
+        #expect(JSBigInt(10).isMersennePrime == nil)
+        #expect(JSBigInt(2).isMersennePrime == nil)
+        #expect(JSBigInt(0).isMersennePrime == nil)
+        #expect(JSBigInt(-7).isMersennePrime == nil)
     }
 
     @Test func primeWalking() {

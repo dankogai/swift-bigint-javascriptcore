@@ -55,15 +55,21 @@ and `import JSCBigInt`.
 - `greatestCommonDivisor(with:)` and `squareRoot()` (integer square
   root, floor), named and behaving like their swift-bignum and
   attaswift/BigInt counterparts.
-- Miller-Rabin primality: `isPrime` is tri-state à la swift-bignum —
-  `false` and `true` are proofs (deterministic below [A014233]'s last
-  entry, ≈3.3 × 10²⁴), `nil` means "probably prime, unproven" with
-  `isProbablePrime` holding that opinion; `millerRabinTest(base:)`
-  exposes a single round.  `nextPrime`/`prevPrime` walk to the
-  neighboring primes (on the probable test, so they terminate at any
-  size), each walk in a single bridge crossing, and `JSBigInt.primes`
-  is the endless lazy sequence of them:
+- The whole primality kit, ported from swift-bignum with identical
+  verdicts: `isPrime` is tri-state — `false` and `true` are proofs
+  (below 2⁶⁴ via exhaustively-verified [Baillie-PSW], below
+  [A014233]'s last entry ≈3.3 × 10²⁴ via thirteen Miller-Rabin bases,
+  or for any Mersenne number via Lucas-Lehmer), `nil` means "probably
+  prime, unproven" with `isProbablePrime` (BPSW) holding that opinion
+  and `isSurelyPrime` giving both halves at once.  The building blocks
+  are public too: `millerRabinTest(base:)`, `isLucasProbablePrime`,
+  `isMersennePrime`, and `jacobiSymbol(_:)`.  `nextPrime`/`prevPrime`
+  walk to the neighboring primes (on the probable test, so they
+  terminate at any size), each walk in a single bridge crossing, and
+  `JSBigInt.primes` is the endless lazy sequence of them:
   `Array(JSBigInt.primes.prefix(5))` is `[2, 3, 5, 7, 11]`.
+
+[Baillie-PSW]: https://en.wikipedia.org/wiki/Baillie%E2%80%93PSW_primality_test
 
 [A014233]: https://oeis.org/A014233
 - `Codable` (encoded as a decimal string).
