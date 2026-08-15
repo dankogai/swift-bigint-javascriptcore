@@ -11,7 +11,9 @@ jobs:
     name: Swift ${{ matrix.swift }} on ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        # macOS only: Linux has no JavaScriptCore, so the canImport guards
+        # compile the whole module away and the job would test nothing
+        os: [macos-latest]
         swift: ["6.3"]
     runs-on: ${{ matrix.os }}
     steps:
