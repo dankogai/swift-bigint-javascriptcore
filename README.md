@@ -60,9 +60,10 @@ and `import JSCBigInt`.
   they lack JavaScriptCore.
 - Every operation crosses the Swift ⇄ JavaScriptCore bridge, so it is not a
   speed demon for many small operations.  Large-number performance is
-  excellent, though — for 10k-digit multiplication it beats attaswift/BigInt
-  severalfold, since the heavy lifting happens inside JSC's optimized
-  `BigInt`.  See [BENCHMARK.md](BENCHMARK.md) for numbers.
+  excellent, though — for 10k-digit multiplication it beats the pure-Swift
+  bignum libraries (attaswift/BigInt, dankogai/swift-bignum) severalfold,
+  since the heavy lifting happens inside JSC's optimized `BigInt`.
+  See [BENCHMARK.md](BENCHMARK.md) for numbers.
 - For serious work, consider [attaswift/BigInt] or [dankogai/swift-bignum];
   this package is a proof of concept that happens to be practical.
 
