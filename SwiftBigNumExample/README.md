@@ -34,9 +34,23 @@ Three tricks make it work:
    typealias JSRat = Rational<JSBigInt>   // BigInt(1).over(BigInt(3)) just works
    ```
 
-`BigFloat` is hard-wired to BigNum's `BigInt` internally, so it is not
-re-parameterized — but conversions flow freely in both directions
-through the `BinaryInteger` machinery, which is the point of `JSBigInt`
-being a full `SignedInteger`.
+4. **`BigFloat` went generic too** ([swift-bignum#31]): it is now
+   `BigFloatOf<IntType>` with `BigFloat = BigFloatOf<BigInt>`, so one
+   more conformance puts a JavaScriptCore mantissa under the float —
+   and π, √2 and e at any precision come out digit-for-digit identical
+   to `BigFloat`'s:
+
+   ```swift
+   extension JSBigInt: @retroactive BigIntegerType {
+       public var isZero: Bool { self == 0 }
+   }
+   typealias JSFloat = BigFloatOf<JSBigInt>
+   JSFloat.PI(precision: 192)   // 3.14159265358979323846…, every digit a JS BigInt's
+   ```
+
+Conversions also flow freely in both directions through the
+`BinaryInteger` machinery, which is the point of `JSBigInt` being a
+full `SignedInteger`.
 
 [dankogai/swift-bignum]: https://github.com/dankogai/swift-bignum
+[swift-bignum#31]: https://github.com/dankogai/swift-bignum/pull/31

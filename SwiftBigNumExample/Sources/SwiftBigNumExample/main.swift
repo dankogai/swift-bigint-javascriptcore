@@ -18,8 +18,19 @@ typealias BNBigInt = BigFloat.Significand
 
 // `Rational` is generic over `RationalElement`, so JSBigInt can be its
 // element: this is BigRat's own machinery running on JavaScriptCore digits.
+// JSBigInt's own greatestCommonDivisor(with:) and squareRoot() are the
+// witnesses, so reduction runs in JavaScriptCore too.
 extension JSBigInt: @retroactive RationalElement {}
 typealias JSRat = Rational<JSBigInt>
+
+// And since swift-bignum's BigFloat went generic (BigFloatOf<IntType>, see
+// https://github.com/dankogai/swift-bignum/pull/31), one more conformance —
+// BigIntegerType, which JSBigInt satisfies save for spelling out `isZero` —
+// puts a JavaScriptCore mantissa under the float as well.
+extension JSBigInt: @retroactive BigIntegerType {
+    public var isZero: Bool { self == 0 }
+}
+typealias JSFloat = BigFloatOf<JSBigInt>
 
 func banner(_ title: String) {
     print("\n== \(title) ==")
@@ -61,7 +72,17 @@ print("sqrt(2), 192 bits :", BigFloat.sqrt(BigFloat(2), precision: 192))
 print("pi, 192 bits      :", BigFloat.PI(precision: 192))
 print("exp(1), 192 bits  :", BigFloat.exp(BigFloat(1), precision: 192))
 
-// MARK: 5. And they interoperate
+// MARK: 5. BigFloat's machinery, JavaScriptCore's mantissa
+
+banner("BigFloatOf<JSBigInt> — every digit below lives in JavaScriptCore")
+print("type(of: mantissa):", type(of: JSFloat.pi.mantissa))
+print("sqrt(2), 192 bits :", JSFloat.sqrt(JSFloat(2), precision: 192))
+print("pi, 192 bits      :", JSFloat.PI(precision: 192))
+print("exp(1), 192 bits  :", JSFloat.exp(JSFloat(1), precision: 192))
+print("agrees with BigFloat:",
+      JSFloat.PI(precision: 192).description == BigFloat.PI(precision: 192).description)
+
+// MARK: 6. And they interoperate
 
 banner("Interop: JSBigInt <-> BigNum, via BinaryInteger")
 let bnFact = BNBigInt(fact30)          // JSBigInt -> BigNum's BigInt

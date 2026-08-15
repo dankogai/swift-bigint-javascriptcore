@@ -341,7 +341,8 @@ extension JSBigInt {
         let result = Engine.fns[name]!.call(withArguments: args)
         if let exception = Engine.context.exception {
             Engine.context.exception = nil
-            preconditionFailure("JSBigInt: \(exception)")
+            let detail = exception.toString() ?? "unknown exception"
+            preconditionFailure("JSBigInt.\(name): \(detail)")
         }
         return result!
     }

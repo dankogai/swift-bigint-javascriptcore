@@ -6,7 +6,9 @@ let package = Package(
     platforms: [.macOS(.v14)],
     dependencies: [
         .package(path: ".."),
-        .package(url: "https://github.com/dankogai/swift-bignum.git", from: "6.3.1"),
+        // BigFloatOf<IntType> (generic BigFloat, dankogai/swift-bignum#31) is on
+        // main but not yet in a release; switch to .upToNextMajor at the next tag
+        .package(url: "https://github.com/dankogai/swift-bignum.git", branch: "main"),
     ],
     targets: [
         .executableTarget(
