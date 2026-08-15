@@ -52,6 +52,9 @@ and `import JSCBigInt`.
 - `power(_:)` via the JS `**` operator, and modular exponentiation
   `power(_:mod:)` with swift-bignum-compatible semantics (least
   non-negative residue; a negative exponent takes the modular inverse).
+- `greatestCommonDivisor(with:)` and `squareRoot()` (integer square
+  root, floor), named and behaving like their swift-bignum and
+  attaswift/BigInt counterparts.
 - `Codable` (encoded as a decimal string).
 - Thread-safe: values are immutable and JavaScriptCore serializes access
   through the `JSVirtualMachine` lock.

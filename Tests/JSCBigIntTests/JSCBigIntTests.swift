@@ -206,6 +206,40 @@ import Foundation
         #expect(JSBigInt(2).power(JSBigInt(1) << 512, mod: 1_000_000_007) == 656254629)
     }
 
+    @Test func greatestCommonDivisor() {
+        #expect(JSBigInt(48).greatestCommonDivisor(with: 18) == 6)
+        #expect(JSBigInt(-48).greatestCommonDivisor(with: 18) == 6)   // never negative
+        #expect(JSBigInt(48).greatestCommonDivisor(with: -18) == 6)
+        #expect(JSBigInt(0).greatestCommonDivisor(with: 5) == 5)
+        #expect(JSBigInt(0).greatestCommonDivisor(with: 0) == 0)      // only zero case
+        #expect(JSBigInt(17).greatestCommonDivisor(with: 19) == 1)    // coprime
+        let p2_100 = JSBigInt(1) << 100
+        #expect(p2_100.greatestCommonDivisor(with: JSBigInt(1) << 60) == JSBigInt(1) << 60)
+        let f90 = (1...90).map { JSBigInt($0) }.reduce(1, *)
+        let f92 = f90 * 91 * 92
+        #expect(f90.greatestCommonDivisor(with: f92) == f90)
+    }
+
+    @Test func squareRoot() {
+        #expect(JSBigInt(0).squareRoot() == 0)
+        #expect(JSBigInt(1).squareRoot() == 1)
+        #expect(JSBigInt(2).squareRoot() == 1)
+        #expect(JSBigInt(3).squareRoot() == 1)
+        #expect(JSBigInt(4).squareRoot() == 2)
+        #expect(JSBigInt(15).squareRoot() == 3)
+        #expect(JSBigInt(16).squareRoot() == 4)
+        #expect(JSBigInt(17).squareRoot() == 4)
+        // floor semantics around a huge perfect square
+        let n = JSBigInt(10).power(50) + 12345
+        #expect((n * n).squareRoot() == n)
+        #expect((n * n - 1).squareRoot() == n - 1)
+        #expect((n * n + 1).squareRoot() == n)
+        // consistency: r^2 <= x < (r+1)^2
+        let x = JSBigInt("123456789", radix: 10)!.power(7)
+        let r = x.squareRoot()
+        #expect(r * r <= x && x < (r + 1) * (r + 1))
+    }
+
     @Test func fibonacci() {
         func fib(_ n: Int) -> JSBigInt {
             var (a, b): (JSBigInt, JSBigInt) = (0, 1)

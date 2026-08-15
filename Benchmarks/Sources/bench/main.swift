@@ -50,6 +50,17 @@ let jPow = JSBigInt(2).power(100_000) // 30,103 digits
 let aPow = AttaBigInt(2).power(100_000)
 let dPow = DanBigInt(2).power(100_000)
 
+// gcd operands: ~1,000-digit coprime prime powers. These behave like random
+// numbers for Euclid (chain length 1922, matching the ~1.94/digit average);
+// beware that repeated-pattern or linearly related inputs collapse the chain
+// and make the benchmark meaningless.
+let jX = JSBigInt(7).power(1183)
+let jY = JSBigInt(3).power(2093)
+let aX = AttaBigInt(7).power(1183)
+let aY = AttaBigInt(3).power(2093)
+let dX = DanBigInt(7).power(1183)
+let dY = DanBigInt(3).power(2093)
+
 // RSA-sized modexp operands: ~2060 bits each
 let digits620 = String(repeating: "9876543210", count: 62)
 let jMod = JSBigInt(digits620)! + 1 // odd
@@ -93,6 +104,14 @@ let cases: [Case] = [
         jsc:  { blackhole(jBase.power(jExp, mod: jMod)) },
         atta: { blackhole(aBase.power(aExp, modulus: aMod)) },
         dan:  { blackhole(dBase.power(dExp, mod: dMod)) }),
+    Case(name: "gcd of two 1,000-digit numbers, 10 times", runs: 3,
+        jsc:  { for _ in 0..<10 { blackhole(jX.greatestCommonDivisor(with: jY)) } },
+        atta: { for _ in 0..<10 { blackhole(aX.greatestCommonDivisor(with: aY)) } },
+        dan:  { for _ in 0..<10 { blackhole(dX.greatestCommonDivisor(with: dY)) } }),
+    Case(name: "isqrt of 20k-digit number, 10 times", runs: 3,
+        jsc:  { for _ in 0..<10 { blackhole(jBig.squareRoot()) } },
+        atta: { for _ in 0..<10 { blackhole(aBig.squareRoot()) } },
+        dan:  { for _ in 0..<10 { blackhole(dBig.squareRoot()) } }),
     Case(name: "toString(2^100_000), decimal", runs: 3,
         jsc:  { blackhole(jPow.description.count) },
         atta: { blackhole(aPow.description.count) },
@@ -115,6 +134,14 @@ let (jM, aM, dM) = (JSBigInt(123).power(jExp, mod: jMod),
                     DanBigInt(123).power(dExp, mod: dMod))
 precondition(jM.description == aM.description, "libraries disagree on modPow!")
 precondition(jM.description == dM.description, "libraries disagree on modPow!")
+let (jG, aG, dG) = (jX.greatestCommonDivisor(with: jY),
+                    aX.greatestCommonDivisor(with: aY),
+                    dX.greatestCommonDivisor(with: dY))
+precondition(jG.description == aG.description, "libraries disagree on gcd!")
+precondition(jG.description == dG.description, "libraries disagree on gcd!")
+let (jS, aS, dS) = (jBig.squareRoot(), aBig.squareRoot(), dBig.squareRoot())
+precondition(jS.description == aS.description, "libraries disagree on isqrt!")
+precondition(jS.description == dS.description, "libraries disagree on isqrt!")
 
 print("| Benchmark | JSCBigInt | attaswift/BigInt | swift-bignum |")
 print("|:--|--:|--:|--:|")

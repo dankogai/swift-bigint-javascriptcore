@@ -129,6 +129,25 @@ extension JSBigInt {
                     if (m < 0n && result !== 0n) result -= am;
                     return result;
                 },
+                gcd: (a, b) => {
+                    let x = a < 0n ? -a : a;
+                    let y = b < 0n ? -b : b;
+                    while (y !== 0n) [x, y] = [y, x % y];
+                    return x;
+                },
+                isqrt: (a) => {
+                    if (a < 0n) return null;
+                    if (a < 2n) return a;
+                    // Newton's method; initial guess 2^(ceil(bits/2)) >= sqrt(a),
+                    // so x decreases monotonically to floor(sqrt(a))
+                    const bits = BigInt(a.toString(2).length);
+                    let x = 1n << ((bits >> 1n) + 1n);
+                    for (;;) {
+                        const y = (x + a / x) >> 1n;
+                        if (y >= x) return x;
+                        x = y;
+                    }
+                },
                 eq:  (a, b) => a === b,
                 lt:  (a, b) => a < b,
             })
@@ -137,7 +156,8 @@ extension JSBigInt {
             var fns = [String: JSValue]()
             for name in ["parse", "str", "fromWords", "words", "bitWidth", "tzbc",
                          "add", "sub", "mul", "div", "mod", "neg", "abs",
-                         "and", "or", "xor", "not", "shl", "shr", "pow", "modpow", "eq", "lt"] {
+                         "and", "or", "xor", "not", "shl", "shr", "pow", "modpow",
+                         "gcd", "isqrt", "eq", "lt"] {
                 fns[name] = ops.objectForKeyedSubscript(name)!
             }
             return fns
@@ -365,6 +385,26 @@ extension JSBigInt {
         let result = Self.jsop("modpow", [object, Self(exponent).object, modulus.object])
         guard result.isNull == false else {
             preconditionFailure("\(self) has no inverse modulo \(modulus)")
+        }
+        return Self(object: result)
+    }
+}
+
+// MARK: - GCD and integer square root
+
+extension JSBigInt {
+    /// The greatest common divisor of `self` and `other`, by Euclid's algorithm
+    /// on the magnitudes — never negative, and zero only when both are zero.
+    public func greatestCommonDivisor(with other: Self) -> Self {
+        Self.binop("gcd", self, other)
+    }
+
+    /// The integer square root: the largest value whose square is at most `self`.
+    /// Traps when `self` is negative, like swift-bignum's `squareRoot()`.
+    public func squareRoot() -> Self {
+        let result = Self.jsop("isqrt", [object])
+        guard result.isNull == false else {
+            preconditionFailure("square root of a negative JSBigInt")
         }
         return Self(object: result)
     }
