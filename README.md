@@ -85,7 +85,7 @@ and `import JSCBigInt`.
   excellent, though — for 10k-digit multiplication it beats the pure-Swift
   bignum libraries (attaswift/BigInt, dankogai/swift-bignum) severalfold,
   since the heavy lifting happens inside JSC's optimized `BigInt`.
-  See [BENCHMARK.md](BENCHMARK.md) for numbers.
+  See [Benchmark.md](Benchmark.md) for numbers.
 - For serious work, consider [attaswift/BigInt] or [dankogai/swift-bignum];
   this package is a proof of concept that happens to be practical.
 
