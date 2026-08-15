@@ -86,11 +86,15 @@ and `import JSCBigInt`.
   bignum libraries (attaswift/BigInt, dankogai/swift-bignum) severalfold,
   since the heavy lifting happens inside JSC's optimized `BigInt`.
   See [Benchmark.md](Benchmark.md) for numbers.
-- For serious work, consider [attaswift/BigInt] or [dankogai/swift-bignum];
-  this package is a proof of concept that happens to be practical.
+- For serious work, consider [attaswift/BigInt] or [dankogai/swift-bignum] —
+  or [dankogai/swift-bigint-gmp], the identical API on GNU MP, which beats
+  all three (this one included) at nearly every size; its Benchmark.md races
+  the four together.  This package is a proof of concept that happens to be
+  practical.
 
 [attaswift/BigInt]: https://github.com/attaswift/BigInt
 [dankogai/swift-bignum]: https://github.com/dankogai/swift-bignum
+[dankogai/swift-bigint-gmp]: https://github.com/dankogai/swift-bigint-gmp
 
 ## Prerequisite
 
