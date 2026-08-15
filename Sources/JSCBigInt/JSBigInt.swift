@@ -61,6 +61,21 @@ extension JSBigInt {
                     318665857834031151167461n, 3317044064679887385961981n,
                 ];
                 const EXTRA_BASES = [43n, 47n, 53n, 59n, 61n, 67n, 71n, 73n, 79n, 83n, 89n, 97n];
+                // 0: composite, 1: prime (proven), 2: probably prime (unproven)
+                const isprime = (n) => {
+                    if (n < 2n) return 0;
+                    for (const p of MR_BASES.concat(EXTRA_BASES)) {
+                        if (n % p === 0n) return n === p ? 1 : 0;
+                    }
+                    for (let i = 0; i < MR_BASES.length; i++) {
+                        if (!mrtest(n, MR_BASES[i])) return 0;
+                        if (n < MR_TABLE[i]) return 1;
+                    }
+                    for (const a of EXTRA_BASES) {
+                        if (!mrtest(n, a)) return 0;
+                    }
+                    return 2;
+                };
                 return {
                 parse: (s, r) => {
                     try {
@@ -162,20 +177,19 @@ extension JSBigInt {
                     return result;
                 },
                 mrtest: mrtest,
-                isprime: (n) => {
-                    // 0: composite, 1: prime (proven), 2: probably prime (unproven)
-                    if (n < 2n) return 0;
-                    for (const p of MR_BASES.concat(EXTRA_BASES)) {
-                        if (n % p === 0n) return n === p ? 1 : 0;
-                    }
-                    for (let i = 0; i < MR_BASES.length; i++) {
-                        if (!mrtest(n, MR_BASES[i])) return 0;
-                        if (n < MR_TABLE[i]) return 1;
-                    }
-                    for (const a of EXTRA_BASES) {
-                        if (!mrtest(n, a)) return 0;
-                    }
-                    return 2;
+                isprime: isprime,
+                nextprime: (n) => {
+                    if (n < 2n) return 2n;
+                    let u = n + ((n & 1n) === 0n ? 1n : 2n);
+                    while (isprime(u) === 0) u += 2n;
+                    return u;
+                },
+                prevprime: (n) => {
+                    if (n <= 2n) return null;
+                    if (n === 3n) return 2n;
+                    let u = n - ((n & 1n) === 0n ? 1n : 2n);
+                    while (isprime(u) === 0) u -= 2n;
+                    return u;
                 },
                 gcd: (a, b) => {
                     let x = a < 0n ? -a : a;
@@ -206,7 +220,8 @@ extension JSBigInt {
             for name in ["parse", "str", "fromWords", "words", "bitWidth", "tzbc",
                          "add", "sub", "mul", "div", "mod", "neg", "abs",
                          "and", "or", "xor", "not", "shl", "shr", "pow", "modpow",
-                         "gcd", "isqrt", "mrtest", "isprime", "eq", "lt"] {
+                         "gcd", "isqrt", "mrtest", "isprime", "nextprime", "prevprime",
+                         "eq", "lt"] {
                 fns[name] = ops.objectForKeyedSubscript(name)!
             }
             return fns
@@ -499,6 +514,26 @@ extension JSBigInt {
         case 1:  return true
         default: return nil
         }
+    }
+
+    /// The first prime greater than `self`; anything below 2 gets 2.
+    ///
+    /// The walk is on `isProbablePrime`, not `isPrime`: past the deterministic
+    /// range `isPrime` is `nil`, and a walk that read that as "composite"
+    /// would step over every candidate and never return.  So above the
+    /// [A014233] bound this is the next *probable* prime.
+    ///
+    /// [A014233]: https://oeis.org/A014233
+    public var nextPrime: Self {
+        Self(object: Self.jsop("nextprime", [object]))
+    }
+
+    /// The last prime less than `self`, or `nil` when there is none — which is
+    /// what 2 and everything below it gets.  Probable above the A014233 bound,
+    /// as `nextPrime` is.
+    public var prevPrime: Self? {
+        let result = Self.jsop("prevprime", [object])
+        return result.isNull ? nil : Self(object: result)
     }
 }
 

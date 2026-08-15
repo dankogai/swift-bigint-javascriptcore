@@ -275,6 +275,37 @@ import Foundation
         #expect((m127 * m127).isPrime == false)
     }
 
+    @Test func primeWalking() {
+        // nextPrime: anything below 2 gets 2
+        #expect(JSBigInt(-5).nextPrime == 2)
+        #expect(JSBigInt(0).nextPrime == 2)
+        #expect(JSBigInt(1).nextPrime == 2)
+        #expect(JSBigInt(2).nextPrime == 3)
+        #expect(JSBigInt(3).nextPrime == 5)
+        #expect(JSBigInt(7).nextPrime == 11)
+        #expect(JSBigInt(89).nextPrime == 97)
+        // prevPrime: 2 and below have no answer
+        #expect(JSBigInt(-5).prevPrime == nil)
+        #expect(JSBigInt(2).prevPrime == nil)
+        #expect(JSBigInt(3).prevPrime == 2)
+        #expect(JSBigInt(4).prevPrime == 3)
+        #expect(JSBigInt(100).prevPrime == 97)
+        // around 10^20, straddling 2^64 but inside the deterministic range
+        let p20 = JSBigInt(10).power(20)
+        #expect(p20.nextPrime == JSBigInt("100000000000000000039"))
+        #expect(p20.prevPrime == JSBigInt("99999999999999999989"))
+        // walking is exclusive: a prime's neighbors skip the prime itself
+        let p = JSBigInt("100000000000000000039")!
+        #expect(p.prevPrime == JSBigInt("99999999999999999989"))
+        #expect(JSBigInt("99999999999999999989")!.nextPrime == p)
+        // past the deterministic range the walk still terminates, on the
+        // probable test
+        let m89 = (JSBigInt(1) << 89) - 1
+        let q = m89.nextPrime
+        #expect(q > m89 && q.isProbablePrime && q.isPrime == nil)
+        #expect(q.prevPrime == m89)  // 2^89 - 1 is itself prime
+    }
+
     @Test func fibonacci() {
         func fib(_ n: Int) -> JSBigInt {
             var (a, b): (JSBigInt, JSBigInt) = (0, 1)
