@@ -306,6 +306,18 @@ import Foundation
         #expect(q.prevPrime == m89)  // 2^89 - 1 is itself prime
     }
 
+    @Test func primeSequence() {
+        #expect(Array(JSBigInt.primes.prefix(10)) == [2, 3, 5, 7, 11, 13, 17, 19, 23, 29])
+        // endless and lazy: only walks as far as asked
+        #expect(JSBigInt.primes.first(where: { $0 > 1000 }) == 1009)
+        #expect(JSBigInt.primes.prefix(while: { $0 < 100 }).reduce(0, +) == 1060)
+        // independent iterators do not share state
+        let a = JSBigInt.primes.makeIterator()
+        var b = a, c = a
+        #expect(b.next() == 2 && b.next() == 3)
+        #expect(c.next() == 2)
+    }
+
     @Test func fibonacci() {
         func fib(_ n: Int) -> JSBigInt {
             var (a, b): (JSBigInt, JSBigInt) = (0, 1)

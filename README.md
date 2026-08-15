@@ -61,7 +61,9 @@ and `import JSCBigInt`.
   `isProbablePrime` holding that opinion; `millerRabinTest(base:)`
   exposes a single round.  `nextPrime`/`prevPrime` walk to the
   neighboring primes (on the probable test, so they terminate at any
-  size), each walk in a single bridge crossing.
+  size), each walk in a single bridge crossing, and `JSBigInt.primes`
+  is the endless lazy sequence of them:
+  `Array(JSBigInt.primes.prefix(5))` is `[2, 3, 5, 7, 11]`.
 
 [A014233]: https://oeis.org/A014233
 - `Codable` (encoded as a decimal string).

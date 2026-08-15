@@ -535,6 +535,22 @@ extension JSBigInt {
         let result = Self.jsop("prevprime", [object])
         return result.isNull ? nil : Self(object: result)
     }
+
+    /// An endless sequence of the primes, in order.  `JSBigInt.primes` builds one.
+    public struct PrimeSequence: Sequence, IteratorProtocol {
+        private var current: JSBigInt? = nil
+        public init() {}
+        public mutating func next() -> JSBigInt? {
+            let value = current.map { $0.nextPrime } ?? 2
+            current = value
+            return value
+        }
+    }
+
+    /// The primes from 2 upward, lazily and without end.
+    ///
+    ///     Array(JSBigInt.primes.prefix(5))    // [2, 3, 5, 7, 11]
+    public static var primes: PrimeSequence { PrimeSequence() }
 }
 
 // MARK: - Codable
